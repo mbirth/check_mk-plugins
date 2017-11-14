@@ -1,0 +1,22 @@
+title: Envivio 4Caster: Memory
+catalog: hw/other
+agents: snmp
+license: GPL
+distribution: check_mk
+description:
+ This check monitors the memory usage of Envivio 4Caster encoders.
+
+ It shows the physical, paged and virtual memory usage. If one value
+ goes above 90%, a {WARN} marker will appear. If it goes above 95%, that
+ will turn into a {CRIT} marker. However, no "problem" will be triggered.
+
+ Performance data is also being collected.
+
+ This check also includes a perfometer.
+
+perfdata:
+ Memory usage for physical, paged and virtual memory.
+
+inventory:
+ If the SNMP data contains info about the memory, it will be detected automatically.
+

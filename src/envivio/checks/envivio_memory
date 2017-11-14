@@ -1,0 +1,97 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+# MIBs: http://<hostname>/Snmp/Mibs/
+
+def inventory_envivio_memory(info):
+    inventory = []
+    for totalPhys, usedPhys, totalPaged, usedPaged, totalVirt, usedVirt in info:
+        inventory.append( ("Memory Usage", None) )
+    return inventory
+
+def envivio_memory_unit_to_string(memkb):
+    units = ["kB", "MB", "GB", "TB"]
+    unitidx = 0
+
+    while memkb > 9999:
+        memkb /= 1000.0
+        unitidx += 1
+
+    return "%.1f %s" % (memkb, units[unitidx])
+
+def check_envivio_memory(item, _no_params, info):
+    # convert to int
+    for i in range(0, len(info[0])):
+        info[0][i] = int(info[0][i])
+
+    status = 0
+
+    for totalPhys, usedPhys, totalPaged, usedPaged, totalVirt, usedVirt in info:
+        freePhys  = totalPhys - usedPhys
+        freePaged = totalPaged - usedPaged
+        freeVirt  = totalVirt - usedVirt
+
+        percPhys  = usedPhys*100.0/totalPhys    if totalPhys > 0 else 0.0
+        percPaged = usedPaged*100.0/totalPaged  if totalPaged > 0 else 0.0
+        percVirt  = usedVirt*100.0/totalVirt    if totalVirt > 0 else 0.0
+
+        message  = "Physical (%iGB): %.1f%% used" % ((totalPhys/1024/1024), percPhys)
+        if percPhys > 95:
+            message += " (!!)"
+        elif percPhys >= 90:
+            message += " (!)"
+        message += " / Paged (%iGB): %.1f%% used" % ((totalPaged/1024/1024), percPaged)
+        if percPaged > 95:
+            message += " (!!)"
+        elif percPaged >= 90:
+            message += " (!)"
+        message += " / Virtual (%iGB): %.1f%% used" % ((totalVirt/1024/1024), percVirt)
+        if percVirt > 95:
+            message += " (!!)"
+        elif percVirt >= 90:
+            message += " (!)"
+
+        longmsg = ""
+        longmsg += "\\nPhysical: Used %s of %s (%.1f%%), %s free" % (envivio_memory_unit_to_string(usedPhys), envivio_memory_unit_to_string(totalPhys), percPhys, envivio_memory_unit_to_string(freePhys))
+        longmsg += "\\nPaged: Used %s of %s kB (%.1f%%), %s kB free" % (envivio_memory_unit_to_string(usedPaged), envivio_memory_unit_to_string(totalPaged), percPaged, envivio_memory_unit_to_string(freePaged))
+        longmsg += "\\nVirtual: Used %s of %s kB (%.1f%%), %s kB free" % (envivio_memory_unit_to_string(usedVirt), envivio_memory_unit_to_string(totalVirt), percVirt, envivio_memory_unit_to_string(freeVirt))
+
+        perfdata = [
+            ("Physical_Used_KB", usedPhys, None, None),
+            ("Physical_Total_KB", totalPhys, None, None),
+            ("Physical_Percent", percPhys, None, None, 0, 100),
+            ("Paged_Used_KB", usedPaged, None, None),
+            ("Paged_Total_KB", totalPaged, None, None),
+            ("Paged_Percent", percPaged, None, None, 0, 100),
+            ("Virtual_Used_KB", usedVirt, None, None),
+            ("Virtual_Total_KB", totalVirt, None, None),
+            ("Virtual_Percent", percVirt, None, None, 0, 100),
+        ]
+
+        message += longmsg
+
+        return status, message, perfdata
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["envivio_memory"] = {
+    "check_function"        : check_envivio_memory,
+    "inventory_function"    : inventory_envivio_memory,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.10613.10.2", [
+                                        1,   # total physical mem (kB)
+                                        2,   # used physical mem (kB)
+                                        3,   # total paged mem (kB)
+                                        4,   # used paged mem (kB)
+                                        5,   # total virtual mem (kB)
+                                        6,   # used virtual mem (kB)
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.10613"),
+    "has_perfdata"          : True
+}

@@ -1,0 +1,63 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+# MIBs: http://<hostname>/Snmp/Mibs/
+
+def inventory_envivio_alarms(info):
+    inventory = []
+    inventory.append( ("Alarms", None) )
+    return inventory
+
+def check_envivio_alarms(item, _no_params, info):
+    severities = [ "Info", "Critical", "Error", "Minor" ]
+    sev2omd    = [ 0, 2, 1, 1 ]
+
+    status = 0
+    message = ""
+    longmsg = ""
+    maxsev = 1
+
+    for aid, stamp, severity, details, obj, label in info:
+        # replace Pipes by Slashes to not confuse Check_MK
+        details  = details.replace("|", "/")
+        severity = saveint(severity)
+        omdsev   = sev2omd[severity]
+        if omdsev > status:
+            status = omdsev
+        if omdsev == maxsev:
+            message += " %s." % (details)
+        elif omdsev > maxsev:
+            # Clear message to only show alarms of the highest priority
+            message = " %s." % (details)
+            maxsev = omdsev
+        longmsg += "\\n%s [%s] %s (%s)" % (stamp, severities[severity], details, label)
+
+    if status == 0:
+        message += "No alarms."
+
+    message += longmsg
+
+    return status, message
+
+check_info["envivio_alarms"] = {
+    "check_function"        : check_envivio_alarms,
+    "inventory_function"    : inventory_envivio_alarms,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.10613.1.3.1", [
+                                        1,   # Alarm ID
+                                        2,   # Timestamp
+                                        3,   # Severity (2 = Error)
+                                        4,   # Detail info
+                                        5,   # Device / Service
+                                        6,   # Message
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.10613"),
+    "has_perfdata"          : False,
+    "handle_empty_info"     : True
+}

@@ -1,0 +1,17 @@
+title: Envivio 4Caster: Alarms
+catalog: hw/other
+agents: snmp
+license: GPL
+distribution: check_mk
+description:
+ This check monitors the list of alarms of Envivio 4Caster encoders.
+
+ Active alarms are displayed with their messages. Errors and Minor problems
+ make the check turn to {WARN}, Critical alarms cause a {CRIT} status.
+
+ Once the alarms are cleared from the device, the status of the check will
+ turn back to {OK} again.
+
+inventory:
+ If the SNMP data contains info about the alarms, it will be detected automatically.
+

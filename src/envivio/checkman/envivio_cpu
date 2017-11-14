@@ -1,0 +1,22 @@
+title: Envivio 4Caster: CPU
+catalog: hw/other
+agents: snmp
+license: GPL
+distribution: check_mk
+description:
+ This check monitors the CPU usages of Envivio 4Caster encoders.
+
+ It shows the average CPU usage over all installed CPUs. If that goes
+ over 95%, the check turns to {WARN}, 98% and more make it turn into
+ {CRIT}.
+
+ Performance data for all CPUs and the average value are also collected.
+
+ This check also includes a perfometer.
+
+perfdata:
+ CPU usage of every single CPU and the average value are collected.
+
+inventory:
+ If the SNMP data contains info about the CPUs, it will be detected automatically.
+

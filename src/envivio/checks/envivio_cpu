@@ -1,0 +1,52 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+# MIBs: http://<hostname>/Snmp/Mibs/
+
+def inventory_envivio_cpu(info):
+    inventory = []
+    for cpuavg, cpuall in info: 
+        inventory.append( ("CPU Usage", None) )
+    return inventory
+
+def check_envivio_cpu(item, _no_params, info):
+    status = 0
+
+    for cpuavg, cpuall in info:
+        cpuavg = float(cpuavg)
+        coreinfo = cpuall.split(",")
+        corecount = len(coreinfo)
+        message = "%i Cores, Average: %.2f%%" % (corecount, cpuavg)
+
+        if cpuavg > 98:
+            status = 2
+        elif cpuavg > 95:
+            status =1
+
+        perfdata = [ ("CPU_Avg_Usage", cpuavg, 95, 98, 0, 100) ]
+
+        for i in range(0, len(coreinfo)):
+            coreinfo[i] = float(coreinfo[i])
+            perfdata.append( ("CPU%02i_Usage" % i, coreinfo[i], None, None, 0, 100) )
+
+        return status, message, perfdata
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["envivio_cpu"] = {
+    "check_function"        : check_envivio_cpu,
+    "inventory_function"    : inventory_envivio_cpu,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.10613.10.1", [
+                                        1,   # Average CPU Usage (%)
+                                        2,   # CPU Usage by Core (%, comma separated)
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.10613"),
+    "has_perfdata"          : True
+}
