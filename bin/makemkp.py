@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import configparser
@@ -45,7 +45,7 @@ cfg = configparser.ConfigParser()
 cfg.read(src_dir + "/baseinfo.ini")
 
 for key in cfg["info"]:
-    info[key] = cfg["info"][key].encode("utf-8")
+    info[key] = cfg["info"][key]
 
 dst_file = os.path.normpath(dst_dir + "/" + "{}-{}.mkp".format(info["name"], info["version"]))
 
@@ -57,17 +57,17 @@ tar = tarfile.open(name=dst_file, mode="w:gz")
 # COLLECT FILES
 
 package_parts = [ (part, title, perm) for part, title, perm in [
-  ( "checks",        "Checks",                    0644 ),
-  ( "notifications", "Notification scripts",      0755 ),
-  ( "inventory",     "Inventory plugins",         0644 ),
-  ( "checkman",      "Checks' man pages",         0644 ),
-  ( "agents",        "Agents",                    0755 ),
-  ( "web",           "Multisite extensions",      0644 ),
-  ( "pnp-templates", "PNP4Nagios templates",      0644 ),
-  ( "doc",           "Documentation files",       0644 ),
-  ( "bin",           "Binaries",                  0755 ),
-  ( "lib",           "Libraries",                 0644 ),
-  ( "mibs",          "SNMP MIBs",                 0644 ),
+  ( "checks",        "Checks",               0o644 ),
+  ( "notifications", "Notification scripts", 0o755 ),
+  ( "inventory",     "Inventory plugins",    0o644 ),
+  ( "checkman",      "Checks' man pages",    0o644 ),
+  ( "agents",        "Agents",               0o755 ),
+  ( "web",           "Multisite extensions", 0o644 ),
+  ( "pnp-templates", "PNP4Nagios templates", 0o644 ),
+  ( "doc",           "Documentation files",  0o644 ),
+  ( "bin",           "Binaries",             0o755 ),
+  ( "lib",           "Libraries",            0o644 ),
+  ( "mibs",          "SNMP MIBs",            0o644 ),
 ]]
 
 def files_in_dir(dir, prefix = ""):
@@ -94,7 +94,7 @@ def create_tar_info(filename, size):
     info.uid = 0
     info.gid = 0
     info.size = size
-    info.mode = 0644
+    info.mode = 0o644
     info.type = tarfile.REGTYPE
     info.name = filename
     return info
@@ -116,8 +116,8 @@ info["num_files"] = num_files
 
 info_file = pprint.pformat(info)
 info_json = json.dumps(info)
-tar_from_string(tar, "info", info_file)
-tar_from_string(tar, "info.json", info_json)
+tar_from_string(tar, "info", info_file.encode("utf-8"))
+tar_from_string(tar, "info.json", info_json.encode("utf-8"))
 
 
 for part in info["files"]:
