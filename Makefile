@@ -29,7 +29,7 @@ list:
 define make-targets
 $(eval OUTPUT_FILE := $(shell bin/findtargets.py build/ $(SRC_DIR)$(1)))
 
-$(OUTPUT_FILE): $(SRC_DIR)$(1)
+$(OUTPUT_FILE): $(SRC_DIR)$(1) $(shell find $(SRC_DIR)$(1) -type f -print0 | xargs -0)
 	@echo "Building $$@"
 	@bin/makemkp.py $$< ./build/
 
