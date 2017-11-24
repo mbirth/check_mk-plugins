@@ -17,6 +17,10 @@ def inventory_envivio_alarms(info):
 def check_envivio_alarms(item, _no_params, info):
     severities = [ "Info", "Critical", "Error", "Minor" ]
     sev2omd    = [ 0, 2, 1, 1 ]
+    ignore_labels = [
+    #    "Input video still image",
+    #    "Input audio silent"
+    ]
 
     status = 0
     message = ""
@@ -28,6 +32,8 @@ def check_envivio_alarms(item, _no_params, info):
         details  = details.replace("|", "/")
         severity = saveint(severity)
         omdsev   = sev2omd[severity]
+        if label in ignore_labels:
+            omdsev = 0
         if omdsev > status:
             status = omdsev
         if omdsev == maxsev:
