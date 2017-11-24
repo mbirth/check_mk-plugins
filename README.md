@@ -1,14 +1,14 @@
 Check_MK Plugins
 ================
 
-This is a collection of plugins for the [Check_MK Monitoring system](http://mathias-kettner.com/check_mk.html)
-that I wrote.
+This is a collection of plugins I wrote for the [Check_MK Monitoring system](http://mathias-kettner.com/check_mk.html).
 
 
 Building
 --------
 
-To build all the plugins, clone this repository and run:
+To build all the plugins, clone [this repository](https://github.com/mbirth/check_mk-plugins/)
+and run:
 
     make all
 
