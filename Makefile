@@ -1,7 +1,7 @@
 SRC_DIR := src/
 ALL_FOLDERS := $(sort $(shell find $(SRC_DIR) -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0))
 ALL_MODULES := $(sort $(subst $(SRC_DIR),,$(ALL_FOLDERS)))
-ALL_TARGETS := $(shell bin/findtargets.py build/ $(ALL_FOLDERS))
+ALL_TARGETS := $(shell python3 bin/findtargets.py build/ $(ALL_FOLDERS))
 
 all: $(ALL_TARGETS)
 
@@ -27,11 +27,11 @@ list:
 # setup
 
 define make-targets
-$(eval OUTPUT_FILE := $(shell bin/findtargets.py build/ $(SRC_DIR)$(1)))
+$(eval OUTPUT_FILE := $(shell python3 bin/findtargets.py build/ $(SRC_DIR)$(1)))
 
 $(OUTPUT_FILE): $(SRC_DIR)$(1) $(shell find $(SRC_DIR)$(1) -type f -print0 | xargs -0)
 	@echo "Building $$@"
-	@bin/makemkp.py $$< ./build/
+	@python3 bin/makemkp.py $$< ./build/
 
 $(1): $(OUTPUT_FILE)
 endef
