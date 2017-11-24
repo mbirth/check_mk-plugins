@@ -22,7 +22,7 @@ show_targets:
 
 define make-goal
 ${shell bin/findtargets.py build/ $(SRC_DIR)$1}: $(SRC_DIR)$1
-	echo "Building $$@"
+	@echo "Building $$@"
 	bin/makemkp.py $$< ./build/
 endef
 
