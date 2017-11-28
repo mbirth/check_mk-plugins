@@ -1,0 +1,60 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+# MIBs: ftp://ftp.snellgroup.com/RollCall/SNMP_MIBs/
+
+def inventory_snell_iqh_voltage(info):
+    inventory = []
+    for i in range(0, len(info)):
+        for oidend, vname, vvolt, vstate in info[i]:
+            inventory.append( ( ("Voltage %s" % vname), None) )
+    return inventory
+
+def check_snell_iqh_voltage(item, _no_params, info):
+    for i in range(0, len(info)):
+        for oidend, vname, vvolt, vstate in info[i]:
+            if ("Voltage %s" % vname) == item:
+                message = "%s - %sV" % (vstate, vvolt)
+                if vstate == "OK" or vstate == "":
+                    status = 0
+                else:
+                    status = 2
+
+                if vvolt != "" and float(vvolt) < 0:
+                    vmin = -8
+                    vmax = -7
+                else:
+                    vmin = 7
+                    vmax = 8
+
+                perfdata = []
+                if vvolt != "":
+                    perfdata = [ (("Voltage_%s" % (i+1)), float(vvolt), None, None, vmin, vmax) ]
+
+                return status, message, perfdata
+    return 3, "%s not found in SNMP data." % item
+
+check_info["snell_iqh_voltage"] = {
+    "check_function"        : check_snell_iqh_voltage,
+    "inventory_function"    : inventory_snell_iqh_voltage,
+    "service_description"   : "%s",
+    "snmp_info"             : [(".1.3.6.1.4.1.7995.1.3.1" , [ "429.1.1", "475.1.1" ], [
+                                     OID_END,
+                                     2024,    # volt1name
+                                     2025,    # volt1Volt
+                                     2005,    # volt1State
+                              ]), (".1.3.6.1.4.1.7995.1.3.1", [ "429.1.1", "475.1.1"], [
+                                    OID_END,
+                                     2026,    # volt2name
+                                     2027,    # volt2Volt
+                                     2006,    # volt2State
+                              ])],
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.7995.1.3"),
+    "has_perfdata"          : True
+}

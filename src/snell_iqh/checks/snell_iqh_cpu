@@ -1,0 +1,46 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+# MIBs: ftp://ftp.snellgroup.com/RollCall/SNMP_MIBs/
+
+def inventory_snell_iqh_cpu(info):
+    inventory = []
+    for oidEnd, cpup in info:
+        if cpup != "-":
+            inventory.append( ("CPU Usage", None) )
+    return inventory
+
+def check_snell_iqh_cpu(item, _no_params, info):
+    for oidEnd, cpup in info:
+        if cpup != "-":
+            cpup = int(cpup)
+            message = "%s%%" % (cpup)
+            if cpup > 98:
+                status = 2
+            elif cpup > 95:
+                status = 1
+            else:
+                status = 0
+
+            perfdata = [ ("CPU_Usage", cpup, 95, 98, 0, 100) ]
+            return status, message, perfdata
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["snell_iqh_cpu"] = {
+    "check_function"        : check_snell_iqh_cpu,
+    "inventory_function"    : inventory_snell_iqh_cpu,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.7995.1.3.1", [ "429.1.1", "475.1.1" ], [
+                                     OID_END,    # "429.1.1.256" (IQH3) or "475.1.1.256" (IQH1)
+                                       17240,    # CPU Usage (%)
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.7995.1.3"),
+    "has_perfdata"          : True
+}

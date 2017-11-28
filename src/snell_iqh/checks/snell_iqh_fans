@@ -1,0 +1,58 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+# MIBs: ftp://ftp.snellgroup.com/RollCall/SNMP_MIBs/
+
+def inventory_snell_iqh_fans(info):
+    inventory = []
+    for i in range(0, len(info)):
+        for oidend, fname, fstate in info[i]:
+            if fstate != "Not Used" and fname != "0":
+                inventory.append( (fname, None) )
+    return inventory
+
+def check_snell_iqh_fans(item, _no_params, info):
+    for i in range(0, len(info)):
+        for oidend, fname, fstate in info[i]:
+            if item == fname:
+                message = "%s" % (fstate)
+                if fstate == "" or fstate[:2] == "OK":
+                    status = 0
+                else:
+                    status = 2
+
+#                perfdata = [ (("Fan %s" % (i+1)), float(vvolt), None, None, vmin, vmax) ]
+
+                return status, message
+    return 3, "%s not found in SNMP data." % item
+
+check_info["snell_iqh_fans"] = {
+    "check_function"        : check_snell_iqh_fans,
+    "inventory_function"    : inventory_snell_iqh_fans,
+    "service_description"   : "%s",
+    "snmp_info"             : [(".1.3.6.1.4.1.7995.1.3.1", [ "429.1.1", "475.1.1" ], [
+                                    OID_END,
+                                    2019,    # fan1name
+                                    2000,    # fan1state ("OK:Low", "OK:Medium", "OK:High")
+                              ]), (".1.3.6.1.4.1.7995.1.3.1", [ "429.1.1", "475.1.1" ], [
+                                    OID_END,
+                                    2044,    # fan2name
+                                    2043,    # fan2state
+                              ]), (".1.3.6.1.4.1.7995.1.3.1", [ "429.1.1", "475.1.1" ], [
+                                    OID_END,
+                                    2046,    # fan3name
+                                    2045,    # fan3state
+                              ]), (".1.3.6.1.4.1.7995.1.3.1", [ "429.1.1", "475.1.1" ], [
+                                    OID_END,
+                                    2048,    # fan4name
+                                    2047,    # fan4state
+                              ])],
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.7995.1.3"),
+    "has_perfdata"          : False
+}

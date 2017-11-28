@@ -1,0 +1,59 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+# MIBs: ftp://ftp.snellgroup.com/RollCall/SNMP_MIBs/
+
+def inventory_snell_iqh_power(info):
+    inventory = []
+    for oidend, pusage, pmax, pcheck in info:
+        inventory.append( ("Power Usage", None) )
+    return inventory
+
+def check_snell_iqh_power(item, _no_params, info):
+    for oidend, pusage, pmax, pcheck in info:
+        message = "%s (Max %s) (Check: %s)" % (pusage, pmax, pcheck)
+        if pusage[:2] == "OK" and pcheck == "OK":
+            status = 0
+        elif ( pusage[:2] == "OK" and pcheck == "" ) or ( pusage == "" and pcheck == "OK"):
+            # Don't signal unknown, at least one item is "OK"
+            status = 0
+        else:
+            status = 2
+
+        perfdata = []
+        if pusage != "":
+            pval = pusage.split(":", 2)[1]
+
+            if pval[-2:] == "LU":
+                # IQH3B reports power as LU (Load Units) instead of W (Watts)
+                pvaln = saveint(pval[:-2])
+                pmaxn = saveint(pmax[:-2])
+            else:
+                pvaln = saveint(pval[:-1])
+                pmaxn = saveint(pmax[:-1])
+
+            perfdata = [ ("Power_Usage", pvaln, None, pmaxn, 0, pmaxn) ]
+
+        return status, message, perfdata
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["snell_iqh_power"] = {
+    "check_function"        : check_snell_iqh_power,
+    "inventory_function"    : inventory_snell_iqh_power,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.7995.1.3.1", [ "429.1.1", "475.1.1" ], [
+                                    OID_END,
+                                    2056,    # Power Usage ("OK:82W")
+                                    2057,    # Power Max ("141W")
+                                    2058,    # Power Check ("OK")
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.7995.1.3"),
+    "has_perfdata"          : True
+}

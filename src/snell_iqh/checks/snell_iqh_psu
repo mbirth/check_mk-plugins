@@ -1,0 +1,53 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+# MIBs: ftp://ftp.snellgroup.com/RollCall/SNMP_MIBs/
+
+def inventory_snell_iqh_psu(info):
+    inventory = []
+    for i in range(0, len(info)):
+        for oidend, pname, pstate in info[i]:
+            if pstate != "Not Used" and pname != "0":
+                inventory.append( (pname, None) )
+    return inventory
+
+def check_snell_iqh_psu(item, _no_params, info):
+    for i in range(0, len(info)):
+        for oidend, pname, pstate in info[i]:
+            if item == pname:
+                message = "%s" % (pstate)
+                if pstate == "OK":
+                    status = 0
+                elif pstate == "":
+                    status = 3
+                else:
+                    status = 2
+
+#                perfdata = [ (("PSU %s" % (i+1)), float(vvolt), None, None, vmin, vmax) ]
+
+                return status, message
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["snell_iqh_psu"] = {
+    "check_function"        : check_snell_iqh_psu,
+    "inventory_function"    : inventory_snell_iqh_psu,
+    "service_description"   : "%s",
+    "snmp_info"             : [(".1.3.6.1.4.1.7995.1.3.1", [ "429.1.1", "475.1.1" ], [
+                                     OID_END,
+                                        2020,    # psu1name
+                                        2001,    # psu1state
+                              ]), (".1.3.6.1.4.1.7995.1.3.1", [ "429.1.1", "475.1.1" ], [
+                                     OID_END,
+                                        2021,    # psu2name
+                                        2002,    # psu2state
+                              ])],
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.7995.1.3"),
+    "has_perfdata"          : False
+}
