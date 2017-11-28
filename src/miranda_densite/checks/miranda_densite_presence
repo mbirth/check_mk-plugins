@@ -1,0 +1,61 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_miranda_densite_presence(info):
+    inventory = []
+    for oidEnd, overallPresence in info:
+        inventory.append( ( "Presence", None ) )
+    return inventory
+
+def check_miranda_densite_presence(item, _no_params, info):
+    status = 0
+    for oidEnd, overallPresence in info:
+        slot_used  = ["➊", "➋", "➌", "➍", "➎", "➏", "➐", "➑", "➒", "➓", "⓫", "⓬", "⓭", "⓮", "⓯", "⓰", "⓱", "⓲", "⓳", "⓴", "PSU1", "PSU2" ]
+        slot_empty = ["➀", "➁", "➂", "➃", "➄", "➅", "➆", "➇", "➈", "➉", "⑪", "⑫", "⑬", "⑭", "⑮", "⑯", "⑰", "⑱", "⑲", "⑳", "----", "----" ]
+        bits    = bin(int(overallPresence))[2:].zfill(22)[::-1]
+
+        message = "Slots: "
+        text     = ""
+        ctr = 0
+        for c in bits[0:20]:
+            if c == '1':
+                message += slot_used[ctr]
+            else:
+                message += slot_empty[ctr]
+            ctr = ctr + 1
+
+        message += " / PSUs: "
+        ctr = 0
+        for c in bits[20:]:
+            if c == '1':
+                message += slot_used[ctr]
+            else:
+                status = 1
+                message += slot_empty[ctr]
+            ctr = ctr + 1
+
+        if status == 1:
+            message = "PSU missing!\n" + message
+
+        return status, message
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["miranda_densite_presence"] = {
+    "check_function"        : check_miranda_densite_presence,
+    "inventory_function"    : inventory_miranda_densite_presence,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.3872.8.1", [
+                                 OID_END,
+                                     1,  #overallPresence
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.3872.8.1.1.0"),
+    "has_perfdata"          : False
+}

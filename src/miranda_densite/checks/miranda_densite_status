@@ -1,0 +1,52 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_miranda_densite_status(info):
+    inventory = []
+    for oidEnd, overallStatus in info:
+        inventory.append( ( "Status", None ) )
+    return inventory
+
+def check_miranda_densite_status(item, _no_params, info):
+    status = 0
+    for oidEnd, overallStatus in info:
+        devices = ["Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6", "Slot 7", "Slot 8", "Slot 9", "Slot 10", \
+                   "Slot 11", "Slot 12", "Slot 13", "Slot 14", "Slot 15", "Slot 16", "Slot 17", "Slot 18", "Slot 19", "Slot 20", \
+                    "PSU1", "PSU2", "PSU1 Fan", "PSU2 Fan", "Rear Fan 1", "Rear Fan 2"]
+        bits    = bin(int(overallStatus))[2:].zfill(26)[::-1]
+
+        message = "Error in: "
+        ctr = 0
+        for c in bits:
+            if c == '1':
+                if status == 2:
+                    message += ", "
+                message += devices[ctr]
+                status = 2
+            ctr = ctr + 1
+
+        if status == 0:
+            message = "No errors reported."
+
+        return status, message
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["miranda_densite_status"] = {
+    "check_function"        : check_miranda_densite_status,
+    "inventory_function"    : inventory_miranda_densite_status,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.3872.8.1", [
+                                 OID_END,
+                                     2,  #overallStatus
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.3872.8.1.1.0"),
+    "has_perfdata"          : False
+}
