@@ -1,0 +1,34 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+ericsson_rx8200_temp_default_levels = { "levels": (45, 60) }
+
+def inventory_ericsson_rx8200_temp(info):
+    inventory = []
+    inventory.append( ("1", "ericsson_rx8200_temp_default_levels") )
+    return inventory
+
+def check_ericsson_rx8200_temp(item, params, info):
+    temperature = saveint(info[0][0])
+    return check_temperature(temperature, params, item)
+
+check_info["ericsson_rx8200_temp"] = {
+    "check_function"        : check_ericsson_rx8200_temp,
+    "inventory_function"    : inventory_ericsson_rx8200_temp,
+    "group"                 : "temperature",
+    "service_description"   : "Temperature %s",
+    "snmp_info"             : (".1.3.6.1.4.1.1773.1.3.208.1.1", [
+                                     "1.0",    # temperature
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.1773.1.3.208.1.1.1.0"),
+    "includes"              : [ "temperature.include" ],
+    "has_perfdata"          : True
+}
+

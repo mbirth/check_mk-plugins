@@ -1,0 +1,41 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+ericsson_rx8200_fans_default_levels = { "lower": (1000, 300) }
+
+def inventory_ericsson_rx8200_fans(info):
+    inventory = []
+    for fanIndex, fanSpeed in info:
+        inventory.append( (fanIndex, "ericsson_rx8200_fans_default_levels") )
+    return inventory
+
+def check_ericsson_rx8200_fans(item, params, info):
+    for fanIndex, fanSpeed in info:
+        if fanIndex != item:
+            continue
+
+        return check_fan(saveint(fanSpeed), params)
+
+    return (3, "%s not found in SNMP data." % item)
+
+check_info["ericsson_rx8200_fans"] = {
+    "check_function"        : check_ericsson_rx8200_fans,
+    "inventory_function"    : inventory_ericsson_rx8200_fans,
+    "group"                 : "hw_fans",
+    "service_description"   : "Fan %s",
+    "snmp_info"             : (".1.3.6.1.4.1.1773.1.3.208.1.1.2.1", [
+                                     1,  # fanIndex
+                                     2,  # fanSpeed
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.1773.1.3.208.1.1.1.0"),
+    "includes"              : [ "fan.include" ],
+    "has_perfdata"          : True
+}
+
