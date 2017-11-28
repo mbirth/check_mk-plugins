@@ -1,0 +1,39 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+mayah_c12_fan_default_levels = { "lower": (1000, 300) }
+
+def inventory_mayah_c12_fan(info):
+    inventory = []
+    inventory.append( ("Case", "mayah_c12_fan_default_levels") )
+    return inventory
+
+def check_mayah_c12_fan(item, params, info):
+    hexdata = info[0][0]
+
+    if item == "Case":
+        rpm = int(hexdata[10:12], 16) * 100
+    else:
+        return (3, "Invalid item: %s" % item)
+
+    return check_fan(rpm, params)
+
+check_info["mayah_c12_fan"] = {
+    "check_function"        : check_mayah_c12_fan,
+    "inventory_function"    : inventory_mayah_c12_fan,
+    "group"                 : "hw_fans",
+    "service_description"   : "%s Fan",
+    "snmp_info"             : (".1.3.6.1.4.1.6210.1", [
+                                     6,  # syshealth1
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.6210"),
+    "includes"              : [ "fan.include" ],
+    "has_perfdata"          : True
+}
