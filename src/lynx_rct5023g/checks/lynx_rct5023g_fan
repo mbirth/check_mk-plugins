@@ -1,0 +1,59 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_lynx_rct5023g_fan(info):
+    inventory = []
+    for OID_END, name, label, f1name, f2name, f3name, f1stat, f2stat, f3stat in info:
+        inventory.append( (name, None) )
+    return inventory
+
+def check_lynx_rct5023g_fan(item, _no_params, info):
+    states = [ "ok", "fail", "missing" ]
+    status = 0
+    for OID_END, name, label, f1name, f2name, f3name, f1stat, f2stat, f3stat in info:
+        if item != name:
+            continue
+
+        f1stat = states[int(f1stat)]
+        f2stat = states[int(f2stat)]
+        f3stat = states[int(f3stat)]
+
+        if "fail" in f1stat+f2stat+f3stat:
+            status = 2
+        elif not "ok" in f1stat+f2stat+f3stat:
+            status = 1
+
+        message = u"%s, ❃1:%s, ❃2:%s, ❃3:%s" % (label, f1stat, f2stat, f3stat)
+        message += u"\r\n1: %s" % (f1name)
+        message += u"\r\n2: %s" % (f2name)
+        message += u"\r\n3: %s" % (f3name)
+
+        return status, message
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["lynx_rct5023g_fan"] = {
+    "check_function"        : check_lynx_rct5023g_fan,
+    "inventory_function"    : inventory_lynx_rct5023g_fan,
+    "service_description"   : "%s Fans",
+    "snmp_info"             : (".1.3.6.1.4.1.14755.2", ["49672.644.1.1", "49673.644.1.1"], [
+                                OID_END,
+                                    1, # Device name
+                                    2, # Custom name
+                                    38, # fan1Name
+                                    39, # fan2Name
+                                    40, # fan3Name
+                                    41, # fan1Status
+                                    42, # fan2Status
+                                    43, # fan3Status
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.14755.2.49672.*"),
+    "has_perfdata"          : False
+}

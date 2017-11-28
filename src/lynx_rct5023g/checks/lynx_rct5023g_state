@@ -1,0 +1,53 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_lynx_rct5023g_state(info):
+    inventory = []
+    for OID_END, name, label, color, text in info:
+        inventory.append( (name, None) )
+    return inventory
+
+def check_lynx_rct5023g_state(item, _no_params, info):
+    ledColors = [ "unknown", "black", "green", "yellow", "red" ]
+    status = 0
+    for OID_END, name, label, color, text in info:
+        if item != name:
+            continue
+
+        color = int(color)
+        colorname = ledColors[color]
+
+        if colorname == "yellow":
+            status = 1
+        elif colorname == "red" or colorname == "black":
+            status = 2
+        elif colorname == "unknown":
+            status = 3
+
+        message = "%s, LED:%s, Status:%s" % (label, colorname, text)
+
+        return status, message
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["lynx_rct5023g_state"] = {
+    "check_function"        : check_lynx_rct5023g_state,
+    "inventory_function"    : inventory_lynx_rct5023g_state,
+    "service_description"   : "%s Status",
+    "snmp_info"             : (".1.3.6.1.4.1.14755.2", ["49672.644.1.1", "49673.644.1.1"], [
+                                OID_END,
+                                    1, # Device name
+                                    2, # Custom name
+                                    7, # statusColor
+                                    9, # statusText
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.14755.2.49672.*"),
+    "has_perfdata"          : False
+}

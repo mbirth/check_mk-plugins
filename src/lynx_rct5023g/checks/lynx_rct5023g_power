@@ -1,0 +1,64 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_lynx_rct5023g_power(info):
+    inventory = []
+    for OID_END, name, label, p1name, p1stat, p1volt, p1temp, p2name, p2stat, p2volt, p2temp in info:
+        inventory.append( (name, None) )
+    return inventory
+
+def check_lynx_rct5023g_power(item, _no_params, info):
+    status = 0
+    for OID_END, name, label, p1name, p1stat, p1volt, p1temp, p2name, p2stat, p2volt, p2temp in info:
+        if item != name:
+            continue
+
+        p1volt = savefloat(p1volt)/10
+        p1temp = saveint(p1temp)
+        p2volt = savefloat(p2volt)/10
+        p2temp = saveint(p2temp)
+
+        if p1stat != "" or p2stat != "":
+            status = 2
+
+        if p1stat == "":
+            p1stat = "OK"
+
+        if p2stat == "":
+            p2stat = "OK"
+
+        message = u"%s, ⚡1:%s (%.1fV, %s℃), ⚡2:%s (%.1fV, %s℃)" % (label, p1stat, p1volt, p1temp, p2stat, p2volt, p2temp)
+        message += u"\r\n1: %s" % (p1name)
+        message += u"\r\n2: %s" % (p2name)
+
+        return status, message
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["lynx_rct5023g_power"] = {
+    "check_function"        : check_lynx_rct5023g_power,
+    "inventory_function"    : inventory_lynx_rct5023g_power,
+    "service_description"   : "%s PSU",
+    "snmp_info"             : (".1.3.6.1.4.1.14755.2", ["49672.644.1.1", "49673.644.1.1"], [
+                                OID_END,
+                                    1, # Device name
+                                    2, # Custom name
+                                    18, # psu1Name
+                                    19, # psu1Status
+                                    20, # psu1Voltage
+                                    21, # psu1Temp
+                                    22, # psu2Name
+                                    23, # psu2Status
+                                    24, # psu2Voltage
+                                    25, # psu2Temp
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.14755.2.49672.*"),
+    "has_perfdata"          : False
+}
