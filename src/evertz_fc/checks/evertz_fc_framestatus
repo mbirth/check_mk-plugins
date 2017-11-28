@@ -1,0 +1,45 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_evertz_fc_framestatus(info):
+    inventory = []
+    for oidEnd, frameStatus in info:
+        inventory.append( ( "Frame Status", None ) )
+    return inventory
+
+def check_evertz_fc_framestatus(item, _no_params, info):
+    status = 0
+    for oidEnd, frameStatus in info:
+        ledStates = [ "-", "Off", "On", "n/a" ]
+        frameLed   = ledStates[int(frameStatus)]
+
+        # 1 = LED off / 2 = LED on / 3 = readout not supported
+        message = "Frame LED: %s" % ( frameLed )
+
+        if frameLed != "On":
+            status = 1
+
+        return status, message
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["evertz_fc_framestatus"] = {
+    "check_function"        : check_evertz_fc_framestatus,
+    "inventory_function"    : inventory_evertz_fc_framestatus,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.6827.10", ["17.4", "216.4", "232.4"], [
+                                 OID_END,
+                                     2,  #frameStatus
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.6827.10.17.2.1.0") or
+                                  oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.6827.10.216") or
+                                  oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.6827.10.232"),
+    "has_perfdata"          : False
+}

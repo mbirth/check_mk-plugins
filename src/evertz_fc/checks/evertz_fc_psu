@@ -1,0 +1,53 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_evertz_fc_psu(info):
+    inventory = []
+    # psu1 = right one
+    # psu2 = left one
+    # 1 = Off/missing / 2 = On / 3 = not supported
+    for oidend, frameStatus, psu1Status, psu2Status in info:
+        inventory.append( ( "PSU Status", None ) )
+    return inventory
+
+def check_evertz_fc_psu(item, _no_params, info):
+    status = 0
+    for oidend, frameStatus, psu1Status, psu2Status in info:
+        # n/a = not supported by hardware
+        ledStates = [ "-", "Off", "On", "n/a" ]
+        frameLed  = ledStates[int(frameStatus)]
+        psu1Led   = ledStates[int(psu1Status)]
+        psu2Led   = ledStates[int(psu2Status)]
+
+        # 1 = PSU LED off / 2 = PSU LED on / 3 = readout not supported
+        message = "PSU1 LED: %s, PSU2 LED: %s" % ( psu1Led, psu2Led )
+
+        if frameLed == "Off" and ( psu1Led == "Off" or psu2Led == "Off" ):
+            status = 1
+
+        return status, message
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["evertz_fc_psu"] = {
+    "check_function"        : check_evertz_fc_psu,
+    "inventory_function"    : inventory_evertz_fc_psu,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.6827.10", ["17.4", "216.4", "232.4"], [
+                                OID_END,
+                                     2,  #frameStatus
+                                     3,  #psu1Status
+                                     4,  #psu2Status
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.6827.10.17.2.1.0") or
+                                  oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.6827.10.216") or
+                                  oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.6827.10.232"),
+    "has_perfdata"          : False
+}
