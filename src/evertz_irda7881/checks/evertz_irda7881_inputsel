@@ -1,0 +1,112 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_evertz_irda7881_inputsel(info):
+    inventory = []
+    for inputPortSelect, inputIPAddress, inputIPPortNumber, inputIGMPV3Mode, programTuningMode, autoProgramSelMode, \
+        programNumberSelect, videoPidSelect, pcrPidSelect, vancPidSelect, pidConfiguration, videoDecoderDelay, \
+        inputForceInterlace, serviceNameSelect, inputBitErrorID, adaptiveLatency, manualPidSelectView in info:
+        inventory.append( ( "Input Selection", None ) )
+    return inventory
+
+def check_evertz_irda7881_inputsel(item, _no_params, info):
+    status = 0
+    for inputPortSelect, inputIPAddress, inputIPPortNumber, inputIGMPV3Mode, programTuningMode, autoProgramSelMode, \
+        programNumberSelect, videoPidSelect, pcrPidSelect, vancPidSelect, pidConfiguration, videoDecoderDelay, \
+        inputForceInterlace, serviceNameSelect, inputBitErrorID, adaptiveLatency, manualPidSelectView in info:
+
+        ports = ["n/a", "sfp0", "sfp1", "asi0", "asi1"]
+        igmpv3Modes = ["n/a", "include", "exclude"]
+        tuningModes = ["n/a", "AUTO", "MAN"]
+        autoProgSelModes = ["n/a", "firstProgramInPAT", "lowestProgramNum", "specificProgramSelect", "specificServiceName"]
+        pidConfigs = ["n/a", "preAssigned", "user"]
+        forceInterlaces = ["n/a", "disable", "enable"]
+        adaptiveLatencies = ["n/a", "on", "off", "min"]
+        manPidSelects = ["n/a", "showAllPids", "showPidsInProgram"]
+
+        inputPort = ports[int(inputPortSelect)]
+        inputIPAddress = snmp_nts(inputIPAddress)
+        inputIPPortNumber = int(inputIPPortNumber)
+        igmpv3Mode = igmpv3Modes[int(inputIGMPV3Mode)]
+        tuningMode = tuningModes[int(programTuningMode)]
+        progSelMode = autoProgSelModes[int(autoProgramSelMode)]
+        programNumberSelect = int(programNumberSelect)
+        videoPidSelect = int(videoPidSelect)
+        pcrPidSelect = int(pcrPidSelect)
+        vancPidSelect = int(vancPidSelect)
+        pidConfig = pidConfigs[int(pidConfiguration)]
+        videoDecoderDelay = int(videoDecoderDelay)
+        forceInterlace = forceInterlaces[int(inputForceInterlace)]
+        serviceNameSelect = snmp_nts(serviceNameSelect)
+        inputBitErrorID = snmp_nts(inputBitErrorID)
+        adaptiveLat = adaptiveLatencies[int(adaptiveLatency)]
+        manPidSelect = manPidSelects[int(manualPidSelectView)]
+
+        message = "%s" % (tuningMode)
+
+        if int(programTuningMode) == 1:
+            # autoPidSelect
+            message += " (%s: %i, %s)" % (progSelMode, programNumberSelect, serviceNameSelect)
+        else:
+            # manualPidSelect
+            message += " (vid:%i pcr:%i vanc:%i)" % (videoPidSelect, pcrPidSelect, vancPidSelect)
+
+        message += ", pidConf:%s, %s" % (pidConfig, manPidSelect)
+        message2  = "\nVideo Decoder Delay: %i ms" % (videoDecoderDelay)
+        message2 += "\nForce Interlace: %s" % (forceInterlace)
+        message2 += "\nInput Bit Error ID: %s" % (inputBitErrorID)
+        message2 += "\nAdaptive Latency: %s" % (adaptiveLat)
+
+        perfdata = [
+            ("inputPort", int(inputPortSelect), None, None),
+            ("tuningMode", int(programTuningMode), None, None),
+            ("progSelMode", int(autoProgramSelMode), None, None),
+            ("progNumSel", programNumberSelect, None, None),
+            ("videoPidSel", videoPidSelect, None, None),
+            ("pcrPidSel", pcrPidSelect, None, None),
+            ("vancPidSel", vancPidSelect, None, None),
+            ("pidConfig", int(pidConfiguration), None, None),
+            ("videoDecDelay", videoDecoderDelay, None, None),
+            ("forceInterlace", int(inputForceInterlace), None, None),
+            ("adaptiveLatency", int(adaptiveLatency), None, None),
+            ("manPidSelectView", int(manualPidSelectView), None, None),
+        ]
+
+        return 0, message + message2, perfdata
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["evertz_irda7881_inputsel"] = {
+    "check_function"        : check_evertz_irda7881_inputsel,
+    "inventory_function"    : inventory_evertz_irda7881_inputsel,
+    "includes"              : [ "nts.include" ],
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.6827.50.322.8.1.1", [
+                                     1,  #inputPortSelect
+                                     2,  #inputIPAddress
+                                     3,  #inputIPPortNumber
+                                     4,  #inputIGMPV3Mode
+                                     5,  #programTuningMode
+                                     6,  #autoProgramSelMode
+                                     7,  #programNumberSelect
+                                     8,  #videoPidSelect
+                                     9,  #pcrPidSelect
+                                    10,  #vancPidSelect
+                                    11,  #pidConfiguration
+                                    15,  #videoDecoderDelay
+                                    17,  #inputForceInterlace
+                                    18,  #serviceNameSelect
+                                    19,  #inputBitErrorID
+                                    20,  #adaptiveLatency
+                                    21,  #manualPidSelectView
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.6827.50.322.2.1.1.1.1"),
+    "has_perfdata"          : True
+}

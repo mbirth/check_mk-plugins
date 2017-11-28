@@ -1,0 +1,39 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_evertz_irda7881_uptime(info):
+    inventory = []
+    for oidend, decoderUpTime in info:
+        inventory.append( ( "Decoder Uptime", None ) )
+    return inventory
+
+def check_evertz_irda7881_uptime(item, _no_params, info):
+    status = 0
+    for oidend, decoderUpTime in info:
+        decoderUpTime = snmp_nts(decoderUpTime)
+
+        message = "up for %s" % ( decoderUpTime )
+
+        return status, message
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["evertz_irda7881_uptime"] = {
+    "check_function"        : check_evertz_irda7881_uptime,
+    "inventory_function"    : inventory_evertz_irda7881_uptime,
+    "includes"              : [ "nts.include" ],
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.6827.50.322.8.1.1.12", [
+                                OID_END,
+                                     1,  #decoderUpTime
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.6827.50.322.2.1.1.1.1"),
+    "has_perfdata"          : False
+}

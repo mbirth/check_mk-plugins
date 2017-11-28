@@ -1,0 +1,59 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_evertz_irda7881_input(info):
+    inventory = []
+    for inputStatus, inputBitrate, inputPacketFraming, inputNumTSPackets, inputProgramName, inputProgramNumber in info:
+        inventory.append( ( "Input Info", None ) )
+    return inventory
+
+def check_evertz_irda7881_input(item, _no_params, info):
+    status = 0
+    for inputStatus, inputBitrate, inputPacketFraming, inputNumTSPackets, inputProgramName, inputProgramNumber in info:
+        packetFramings = ["n/a", "UDP", "RTP"]
+        inputStatus = snmp_nts(inputStatus)
+        inputProgramName = snmp_nts(inputProgramName)
+        packetFraming = packetFramings[int(inputPacketFraming)]
+        inputBitrate = int(inputBitrate)
+        inputNumTSPackets = int(inputNumTSPackets)
+        inputProgramNumber = int(inputProgramNumber)
+
+        message = "%s (%i: %s), %i kbps, %s, %i TS per IP packet" % ( inputStatus, inputProgramNumber, inputProgramName, inputBitrate, packetFraming, inputNumTSPackets )
+
+        if inputStatus != "Present":
+            status = 1
+
+        perfdata = [
+            ("Pgm_Number", inputProgramNumber, None, None),
+            ("Bitrate", inputBitrate, None, None),
+            ("Packet_Framing", int(inputPacketFraming), None, None),
+            ("NumTSPackets", inputNumTSPackets, None, None)
+        ]
+
+        return status, message, perfdata
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["evertz_irda7881_input"] = {
+    "check_function"        : check_evertz_irda7881_input,
+    "inventory_function"    : inventory_evertz_irda7881_input,
+    "includes"              : [ "nts.include" ],
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.6827.50.322.16.1.1", [
+                                     1,  #inputStatus
+                                     2,  #inputBitrate
+                                     3,  #inputPacketFraming
+                                     4,  #inputNumTSPackets
+                                     5,  #inputProgramName
+                                     6,  #inputProgramNumber
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.6827.50.322.2.1.1.1.1"),
+    "has_perfdata"          : True
+}

@@ -1,0 +1,59 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_evertz_irda7881_demux(info):
+    inventory = []
+    for PMTPid, PCRPid, VideoPid, VideoCompressionType, VideoChromaFormat, VideoResolution, VideoFrameRate, VideoBitrate in info:
+        inventory.append( ( "Demux Info", None ) )
+    return inventory
+
+def check_evertz_irda7881_demux(item, _no_params, info):
+    status = 0
+    for PMTPid, PCRPid, VideoPid, VideoCompressionType, VideoChromaFormat, VideoResolution, VideoFrameRate, VideoBitrate in info:
+        PMTPid = int(PMTPid)
+        PCRPid = int(PCRPid)
+        VideoPid = int(VideoPid)
+        VideoCompressionType = snmp_nts(VideoCompressionType)
+        VideoChromaFormat    = snmp_nts(VideoChromaFormat)
+        VideoResolution      = snmp_nts(VideoResolution)
+        VideoFrameRate       = snmp_nts(VideoFrameRate)
+        VideoBitrate = int(VideoBitrate)
+
+        message = "PMT:%i PCR:%i Video:%i - %s with %i kbps, %s@%s (%s)" % ( PMTPid, PCRPid, VideoPid, VideoCompressionType, VideoBitrate, VideoResolution, VideoFrameRate, VideoChromaFormat )
+
+        perfdata = [
+            ("PMT_Pid", PMTPid, None, None),
+            ("PCR_Pid", PCRPid, None, None),
+            ("Video_Pid", VideoPid, None, None),
+            ("Bitrate", VideoBitrate, None, None)
+        ]
+
+        return status, message, perfdata
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["evertz_irda7881_demux"] = {
+    "check_function"        : check_evertz_irda7881_demux,
+    "inventory_function"    : inventory_evertz_irda7881_demux,
+    "includes"              : [ "nts.include" ],
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.6827.50.322.17.1.1", [
+                                     1,  #demuxPMTPid
+                                     2,  #demuxPCRPid
+                                     3,  #demuxVideoPid
+                                     4,  #demuxVideoCompressionType
+                                     5,  #demuxVideoChromaFormat
+                                     6,  #demuxVideoResolution
+                                     7,  #demuxVideoFrameRate
+                                     8,  #demuxVideoBitrate
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.6827.50.322.2.1.1.1.1"),
+    "has_perfdata"          : True
+}

@@ -1,0 +1,94 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_evertz_irda7881_inputts(info):
+    inventory = []
+    for tsInputSourceSelect, tsInPrimarySource, tsInSecondarySource, tsInSourceSelectMode, tsInSourceInUse, \
+        tsInASIPres, tsInBitrate, tsInPIDCount, tsInSyncLossErr, tsInSyncByteErr, tsInCCErr in info:
+        inventory.append( ( "Input TS Selection", None ) )
+    return inventory
+
+def check_evertz_irda7881_inputts(item, _no_params, info):
+    status = 0
+    for tsInputSourceSelect, tsInPrimarySource, tsInSecondarySource, tsInSourceSelectMode, tsInSourceInUse, \
+        tsInASIPres, tsInBitrate, tsInPIDCount, tsInSyncLossErr, tsInSyncByteErr, tsInCCErr in info:
+        sources = ["n/a", "demod1", "demod2", "demod3", "demod4", "asi", "ip"]
+        select_modes = ["n/a", "forcePri", "forceSec", "auto"]
+        source_in_uses = ["n/a", "main", "backup", "na"]
+        presences = ["n/a", "loss", "present"]
+
+        usedSource = sources[int(tsInputSourceSelect)]
+        priSource = sources[int(tsInPrimarySource)]
+        secSource = sources[int(tsInSecondarySource)]
+        selectMode = select_modes[int(tsInSourceSelectMode)]
+        sourceSel = source_in_uses[int(tsInSourceInUse)]
+        asiPresent = presences[int(tsInASIPres)]
+        tsInBitrate = int(tsInBitrate)
+        tsInPIDCount = int(tsInPIDCount)
+        tsInSyncLossErr = int(tsInSyncLossErr)
+        tsInSyncByteErr = int(tsInSyncByteErr)
+        tsInCCErr = int(tsInCCErr)
+
+        message = "Mode:%s " % (selectMode)
+
+        if sourceSel == "main":
+            message += "❶▶%s◀ ➁▷%s◁" % (priSource, secSource)
+        elif sourceSel == "backup":
+            message += "➀▷%s◁ ❷▶%s◀" % (priSource, secSource)
+        else:
+            message += "SOURCE SELECTION: %s" % (sourceSel)
+
+        message += ", %i kbps" % (tsInBitrate)
+        message += ", ASI:%s" % (asiPresent)
+        message += ", %i PIDs found" % (tsInPIDCount)
+
+        message2  = "\nSync losses: %i" % (tsInSyncLossErr)
+        message2 += "\nSync byte errors: %i" % (tsInSyncByteErr)
+        message2 += "\nContinuity count errors: %i" % (tsInCCErr)
+
+        perfdata = [
+            ("inputSourceSelect", int(tsInputSourceSelect), None, None),
+            ("inPrimarySource", int(tsInPrimarySource), None, None),
+            ("inSecondarySource", int(tsInSecondarySource), None, None),
+            ("inSourceSelectMode", int(tsInSourceSelectMode), None, None),
+            ("inSourceInUse", int(tsInSourceInUse), None, None),
+            ("inASIPres", int(tsInASIPres), None, None),
+            ("inBitrate", tsInBitrate, None, None),
+            ("inPIDCount", tsInPIDCount, None, None),
+            ("inSyncLossErr", tsInSyncLossErr, None, None),
+            ("inSyncByteErr", tsInSyncByteErr, None, None),
+            ("inCCErr", tsInCCErr, None, None),
+        ]
+
+        return 0, message + message2, perfdata
+
+    return 3, "%s not found in SNMP data." % item
+
+check_info["evertz_irda7881_inputts"] = {
+    "check_function"        : check_evertz_irda7881_inputts,
+    "inventory_function"    : inventory_evertz_irda7881_inputts,
+    "includes"              : [ "nts.include" ],
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.6827.50.322.41.1.1", [
+                                     1,  #tsInputSourceSelect
+                                     2,  #tsInPrimarySource
+                                     3,  #tsInSecondarySource
+                                     4,  #tsInSourceSelectMode
+                                     5,  #tsInSourceInUse
+                                     6,  #tsInASIPres
+                                     7,  #tsInBitrate
+                                     8,  #tsInPIDCount
+                                     9,  #tsInSyncLossErr
+                                    10,  #tsInSyncByteErr
+                                    11,  #tsInCCErr
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.6827.50.322.2.1.1.1.1"),
+    "has_perfdata"          : True
+}
