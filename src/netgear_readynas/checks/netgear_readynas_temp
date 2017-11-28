@@ -1,0 +1,60 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+netgear_readynas_temp_default_levels = { "levels": (60, 80) }
+
+def inventory_netgear_readynas_temp(info):
+    inventory = []
+    for tempNumber, tempFht, tempStatus in info:
+        inventory.append( (tempNumber, "netgear_readynas_temp_default_levels") )
+    return inventory
+
+def check_netgear_readynas_temp(item, params, info):
+    status = 0
+    for tempNumber, tempFht, tempStatus in info:
+        if tempNumber != item: continue
+
+        fht = saveint(tempFht)
+        cel = fahrenheit_to_celsius(fht)
+
+        if tempStatus != "ok":
+            status = 1
+
+        upperwarn, uppercrit = params["levels"]
+
+        tempsym = ""
+        if cel > uppercrit:
+            status = 2
+            tempsym = " (!!)"
+        elif cel > upperwarn and status <= 1:
+            status = 1
+            tempsym = " (!)"
+
+        message = u"Temperature %s is %i℃ (%i℉). (%s)%s" % (tempNumber, cel, fht, tempStatus, tempsym)
+        perfdata = [ ("Temperature_C", cel, upperwarn, uppercrit, 0, uppercrit) ]
+
+        return (status, message, perfdata)
+
+    return (3, "%s not found in SNMP data." % item)
+
+check_info["netgear_readynas_temp"] = {
+    "check_function"        : check_netgear_readynas_temp,
+    "inventory_function"    : inventory_netgear_readynas_temp,
+    "group"                 : "temperature",
+    "service_description"   : "Temperature %s",
+    "snmp_info"             : (".1.3.6.1.4.1.4526.18.5.1", [
+                                     1,    # tempNumber
+                                     2,    # tempFahrenheit
+                                     3,    # tempStatus
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.4526.18.1.0"),
+    "includes"              : [ "temperature.include" ],
+    "has_perfdata"          : True
+}

@@ -1,0 +1,55 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_netgear_readynas_hdd(info):
+    inventory = []
+    for diskNumber, diskChannel, diskModel, diskState, diskTemperature in info:
+        inventory.append( ("HDD Status", {}) )
+        return inventory
+
+def check_netgear_readynas_hdd(item, params, info):
+    status = 0
+    hddcount = 0
+    badcount = 0
+    hddlist = []
+    for diskNumber, diskChannel, diskModel, diskState, diskTemperature in info:
+        hddcount += 1
+        celsius = fahrenheit_to_celsius(saveint(diskTemperature))
+        hddlist.append(u"%s-%s. %s: %i℃ (%s)" % (diskNumber, diskChannel, diskModel, celsius, diskState))
+        if diskState != "ok":
+            status = 1
+            badcount += 1
+
+    if badcount > 0:
+        statusmsg = u"%i bad disks! (!)" % (badcount)
+    else:
+        statusmsg = u"All ok."
+
+    hddlist_str = "\\n".join(hddlist)
+    message = u"%i HDDs installed. %s\\n%s" % (hddcount, statusmsg, hddlist_str)
+
+    return (status, message)
+
+check_info["netgear_readynas_hdd"] = {
+    "check_function"        : check_netgear_readynas_hdd,
+    "inventory_function"    : inventory_netgear_readynas_hdd,
+    "group"                 : "filesystem",
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.4526.18.3.1", [
+                                     1,    # diskNumber
+                                     2,    # diskChannel
+                                     3,    # diskModel
+                                     4,    # diskState
+                                     5,    # diskTemperature
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.4526.18.1.0"),
+    "includes"              : [ "temperature.include" ],
+    "has_perfdata"          : False
+}

@@ -1,0 +1,55 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_netgear_readynas_volume(info):
+    mplist = []
+    for volNumber, volName, volRaidLevel, volStatus, volSize, volFreeSpace in info:
+        mplist.append( volNumber )
+    return df_inventory(mplist)
+
+def check_netgear_readynas_volume(item, params, info):
+    fslist = []
+    status = 0
+    for volNumber, volName, volRaidLevel, volStatus, volSize, volFreeSpace in info:
+        if volNumber != item: continue
+
+        total = saveint(volSize)
+        free  = saveint(volFreeSpace)
+        fslist.append( (("vol%s" % item), total, free, 0) )
+        status, message, perfdata = df_check_filesystem_list(("vol%s" % item), params, fslist)
+
+        message = u"%s: %s, %s (%s)" % (volName, message, volRaidLevel, volStatus)
+
+        if volStatus != "ok":
+            status = max(status, 1)
+            message = u"%s: Volume Status %s (!), %s" % (volName, volStatus, volRaidLevel)
+
+        return (status, message, perfdata)
+
+    return (3, "%s not found in SNMP data." % item)
+
+check_info["netgear_readynas_volume"] = {
+    "check_function"        : check_netgear_readynas_volume,
+    "inventory_function"    : inventory_netgear_readynas_volume,
+    "group"                 : "filesystem",
+    "default_levels_variable": "filesystem_default_levels",
+    "service_description"   : "Volume %s",
+    "snmp_info"             : (".1.3.6.1.4.1.4526.18.7.1", [
+                                     1,    # volumeNumber
+                                     2,    # volumeName
+                                     3,    # volumeRAIDLevel
+                                     4,    # volumeStatus
+                                     5,    # volumeSize
+                                     6,    # volumeFreeSpace
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.4526.18.1.0"),
+    "includes"              : [ "df.include" ],
+    "has_perfdata"          : True
+}

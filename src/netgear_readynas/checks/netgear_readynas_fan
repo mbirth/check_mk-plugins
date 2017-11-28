@@ -1,0 +1,55 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+netgear_readynas_fan_default_levels = { "lower": (2000, 1000), "upper": (8000, 9000) }
+
+def inventory_netgear_readynas_fan(info):
+    inventory = []
+    for fanNumber, fanRpm, fanArea in info:
+        inventory.append( (fanArea, "netgear_readynas_fan_default_levels") )
+    return inventory
+
+def check_netgear_readynas_fan(item, params, info):
+    status = 0
+    for fanNumber, fanRpm, fanArea in info:
+        if fanArea != item: continue
+
+        rpm = saveint(fanRpm)
+        lowerwarn, lowercrit = params["lower"]
+        upperwarn, uppercrit = params["upper"]
+
+        rpmsym = ""
+        if rpm > uppercrit or rpm < lowercrit:
+            status = 2
+            rpmsym = " (!!)"
+        elif rpm > upperwarn or rpm < lowerwarn:
+            status = 1
+            rpmsym = " (!)"
+
+        message = "Fan %s is at %i rpm.%s" % (fanArea, rpm, rpmsym)
+        perfdata = [ ("rpm", rpm, upperwarn, uppercrit, 0, uppercrit) ]
+
+        return (status, message, perfdata)
+
+    return (3, "%s not found in SNMP data." % item)
+
+check_info["netgear_readynas_fan"] = {
+    "check_function"        : check_netgear_readynas_fan,
+    "inventory_function"    : inventory_netgear_readynas_fan,
+    "group"                 : "hw_fans",
+    "service_description"   : "Fan %s",
+    "snmp_info"             : (".1.3.6.1.4.1.4526.18.4.1", [
+                                     1,    # fanNumber
+                                     2,    # fanRPM
+                                     3,    # fanType
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.4526.18.1.0"),
+    "has_perfdata"          : True
+}
