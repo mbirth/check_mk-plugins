@@ -1,0 +1,71 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_appeartv_messages(info):
+    inventory = []
+    inventory.append( ("Messages", None) )
+    return inventory
+
+def check_appeartv_messages(item, _no_params, info):
+    severities = [ "Indeterminate", "Critical", "Major", "Minor", "Warning", "Cleared", "Notify" ]
+    sev2omd    = [ 1, 2, 2, 1, 1, 0, 0 ]
+
+    status = 0
+    message = ""
+    longmsg = ""
+    maxsev = 1
+
+    for seqno, mid, srcname, text, gentime, detailpres, severity, detail, slot, port, instance, cardid in info:
+        # replace Pipes by Slashes to not confuse Check_MK
+        text   = text.replace("|", "/")
+        detail = detail.replace("|", "/")
+        omdsev = sev2omd[int(severity)]
+        if omdsev > status:
+            status = omdsev
+        if omdsev == maxsev:
+            message += " %s: %s." % (srcname, text)
+        elif omdsev > maxsev:
+            # Clear message to only show alarms of the highest priority
+            message = " %s: %s." % (srcname, text)
+            maxsev = omdsev
+        longmsg += "\\n%s [%s] %s: %s" % (gentime, severities[int(severity)], srcname, text)
+        if detailpres == "1":
+            longmsg += " (%s)" % (detail)
+        longmsg += " [Slot: %s, Port: %s, Card: %s]" % (slot, port, cardid)
+
+    if status == 0:
+        message += "No messages."
+
+    message += longmsg
+
+    return status, message
+
+check_info["appeartv_messages"] = {
+    "check_function"        : check_appeartv_messages,
+    "inventory_function"    : inventory_appeartv_messages,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.23916.3.1.4.1", [
+                                        1,   # msgSeqNo
+                                        2,   # msgId
+                                        3,   # msgSrcName
+                                        4,   # msgText
+                                        6,   # msgGenTime
+                                       11,   # msgDetailPresent
+                                       13,   # msgSeverity (0-unkn, 1-critical .. 6-notify)
+                                       14,   # msgDetail
+                                       15,   # msgSlot
+                                       16,   # msgPort
+                                       17,   # msgInstance
+                                       18,   # msgCardId
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.23916"),
+    "has_perfdata"          : False,
+    "handle_empty_info"     : True
+}
