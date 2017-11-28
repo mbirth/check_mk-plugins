@@ -1,0 +1,76 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_selenio_mcp_leds(info):
+    inventory = []
+    if len(info[0]) > 0 and info[0][1] > 0:
+        inventory.append( ("Frontpanel", None) )
+    return inventory
+
+def check_selenio_mcp_leds(item, _no_params, info):
+    LEDs    = [ "System", "Module", "Input", "Alarm", "Ctrl", "Ref", "CA Ref" ]
+    E18enum = [ "degraded", "faulty", "not present", "OK", "N/A" ]
+    E62enum = [ "Off", "Red", "Green", "Amber" ]
+
+
+    if len(info[0]) < 3:
+        return 3, "%s not found in SNMP data." % item
+
+    # remove OID part from array
+    info[0].pop(0)
+
+    # get frontpanelstatus
+    fpStatus   = int(info[0].pop(0))
+    frontPanel = E18enum[fpStatus]
+
+    status = 0
+    message = "Frontpanel: %s" % frontPanel
+    details = "\\nFrontpanel: %s" % frontPanel
+
+    if frontPanel != "OK" and frontPanel != "N/A":
+        status = 1
+
+    for i in range(0, len(info[0])):
+        led_name  = LEDs[i]
+        led_code  = int(info[0][i])
+        led_color = E62enum[led_code]
+        details += "\\n%s LED: %s" % (led_name, led_color)
+
+        if led_color == "Amber":
+            if status < 1:
+                status = 1
+            message += " %s LED is %s" % (led_name, led_color)
+        elif led_color == "Red":
+            if status < 2:
+                status = 2
+            message += " %s LED is %s" % (led_name, led_color)
+
+    message += details
+
+    return status, message
+
+check_info["selenio_mcp_leds"] = {
+    "check_function"        : check_selenio_mcp_leds,
+    "inventory_function"    : inventory_selenio_mcp_leds,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.290.9.3.3.21", ["1.1", "25.1"],
+                                   [ OID_END,  # "1.1.1.1.0" (MCP3) or "25.1.1.1.0" (MCP1)
+                                     392,    # frontPanelStatus (E18enum)
+                                     229,    # systemLEDValue (E62enum)
+                                     230,    # moduleLEDValue
+                                     231,    # inputLEDValue
+                                     232,    # alarmLEDValue
+                                    1159,    # controllerLEDValue
+                                    1405,    # refLEDValue ("Ref")
+                                    1406,    # carefLEDValue ("CA Ref")
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.290.9.3.3.21"),
+    "has_perfdata"          : False
+}

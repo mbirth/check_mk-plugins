@@ -1,0 +1,97 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_selenio_mcp_temp(info):
+    inventory = []
+    if len(info[0]) > 0 and info[0][1] > 0:
+        inventory.append( ("Temperatures", None) )
+    return inventory
+
+def check_selenio_mcp_temp(item, _no_params, info):
+    E18enum = [ "degraded", "faulty", "not present", "OK", "N/A" ]
+    E65enum = [ "N/A", "OK", "hot", "overheated" ]
+    if len(info[0]) < 3:
+        return 3, "%s not found in SNMP data." % item
+
+    # remove OID part from array
+    info[0].pop(0)
+
+    status = 0
+    ambTemp = info[0][0]
+    message = u"Ambient Temperature is %s℃." % (ambTemp)
+    details = ""
+
+    psuOk = True
+    for i in range(0, 2):
+        msg = "PSU %i is %s." % ((i+1), E18enum[int(info[0][1+i])])
+        details += "\\n" + msg
+        if int(info[0][1+i]) not in [2, 3, 4]:
+            message += " " + msg
+            status = 2
+            psuOk = False
+    if psuOk:
+        message += " PSUs: OK."
+
+    slotOk = True
+    for i in range(0, 14):
+        msg = "Slot %i is %s." % ((i+1), E65enum[int(info[0][3+i])])
+        details += "\\n" + msg
+        if int(info[0][3+i]) not in [0, 1]:
+            message += " " + msg
+            status = 2
+            slotOk = False
+    if slotOk:
+        message += " Slots: OK."
+
+    ctrlOk = True
+    for i in range(0, 2):
+        msg = "Ctrl %i is %s." % ((i+1), E65enum[int(info[0][17+i])])
+        details += "\\n" + msg
+        if int(info[0][17+i]) not in [0, 1]:
+            message += " " + msg
+            status = 2
+            ctrlOk = False
+    if ctrlOk:
+        message += " Ctrls: OK."
+
+    message += details
+
+    perfdata = [ ("Ambient_Temp", int(ambTemp), None, None, 0, 50) ]
+    return status, message, perfdata
+
+check_info["selenio_mcp_temp"] = {
+    "check_function"        : check_selenio_mcp_temp,
+    "inventory_function"    : inventory_selenio_mcp_temp,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.290.9.3.3.21", ["1.1", "25.1"],
+                                   [ OID_END,  # "1.1.1.1.0" (MCP3) or "25.1.1.1.0" (MCP1)
+                                     377,    # 0 ambientTemperature (int/degC)
+                                     378,    # 1 primaryPSUtempOK (E18enum)
+                                     379,    # 2 secondaryPSUtempOK (E18enum)
+                                     567,    # 3 slot1tempOK (E65enum)
+                                     593,    # 4 slot2tempOK
+                                     619,    # 5 slot3tempOK
+                                     644,    # 6 slot4tempOK
+                                     670,    # 7 slot5tempOK
+                                     696,    # 8 slot6tempOK
+                                     722,    # 9 slot7tempOK
+                                     748,    # 10 slot8tempOK
+                                     774,    # 11 slot9tempOK
+                                     800,    # 12 slot10tempOK
+                                     826,    # 13 slot11tempOK
+                                     852,    # 14 slot12tempOK
+                                     878,    # 15 slot13tempOK
+                                     904,    # 16 slot14tempOK
+                                    1208,    # 17 primaryCtrlTempOK (E65enum)
+                                    1185,    # 18 secondaryCtrlTempOK (E65enum)
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.290.9.3.3.21"),
+    "has_perfdata"          : True
+}

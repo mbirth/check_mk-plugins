@@ -1,0 +1,78 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_selenio_mcp_fans(info):
+    inventory = []
+    if len(info[0]) > 0 and info[0][1] > 0:
+        inventory.append( ("Fans", None) )
+    return inventory
+
+def check_selenio_mcp_fans(item, _no_params, info):
+    E18enum = [ "degraded", "faulty", "not present", "OK", "N/A" ]
+    E46enum = [ "degraded", "faulty", "OK" ]
+
+    if len(info[0]) < 3:
+        return 3, "%s not found in SNMP data." % item
+
+    # remove OID part from array
+    info[0].pop(0)
+
+    # get frontpanelstatus
+    fpStatus   = int(info[0].pop(0))
+    frontPanel = E18enum[fpStatus]
+
+    status = 0
+    message = ""
+    details = "\\nFrontpanel: %s" % frontPanel
+
+    if frontPanel != "OK" and frontPanel != "N/A":
+        status = 1
+        message += "Frontpanel is %s (!)" % frontPanel
+
+    # if frontPanel == "not present", fans 1..4 will report faults
+
+    for i in range(0, len(info[0])):
+        fan_state = E46enum[int(info[0][i])]
+        details += "\\nFan %i: %s" % ((i+1), fan_state)
+        if fan_state == "degraded":
+            if status < 1:
+                status = 1
+            message += " Fan %i is %s." % ((i+1), fan_state)
+        elif fan_state == "faulty":
+            if (frontPanel != "not present" or i>=4):
+                # only handle if fan failure is not due to open front panel
+                if status < 2:
+                    status = 2
+                message += " Fan %i is %s. (!!)" % ((i+1), fan_state)
+
+    if message == "":
+        message = "All ok."
+
+    message += details
+
+    return status, message
+
+check_info["selenio_mcp_fans"] = {
+    "check_function"        : check_selenio_mcp_fans,
+    "inventory_function"    : inventory_selenio_mcp_fans,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.290.9.3.3.21", ["1.1", "25.1"],
+                                   [ OID_END,  # "1.1.1.1.0" (MCP3) or "25.1.1.1.0" (MCP1)
+                                     392,    # frontPanelStatus (E18enum)
+                                     386,    # fan1Value (E46enum)
+                                     387,    # fan2Value
+                                     388,    # fan3Value
+                                     389,    # fan4Value
+                                    1394,    # fan5Value
+                                    1395,    # fan6Value
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.290.9.3.3.21"),
+    "has_perfdata"          : False
+}

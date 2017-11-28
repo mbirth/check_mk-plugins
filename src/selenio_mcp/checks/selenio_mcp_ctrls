@@ -1,0 +1,64 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
+
+def inventory_selenio_mcp_ctrls(info):
+    inventory = []
+    if len(info[0]) > 0:
+        inventory.append( ("Controllers", None) )
+    return inventory
+
+def check_selenio_mcp_ctrls(item, _no_params, info):
+    E59enum = [ "Booting", "Fault", "In Service", "None", "not present", "Shutdown", "Wrong Type" ]
+    E66enum = [ "Active", "Standby", "Synchronizing", "not present" ]
+
+    if len(info[0]) < 3:
+        return 3, "%s not found in SNMP data." % item
+
+    # remove OID part from array
+    info[0].pop(0)
+
+    ctrlStatus  = [ E59enum[int(info[0][0])], E59enum[int(info[0][1])] ]
+    ctrlStatus2 = [ E66enum[int(info[0][2])], E66enum[int(info[0][3])] ]
+
+    status = 0
+    message = ""
+
+    for i in range(0, len(ctrlStatus)):
+        c = ctrlStatus[i]
+        d = ctrlStatus2[i]
+        if i>0:
+            message += ", "
+        message += " Controller %i: %s (%s)" % ((i+1), c, d)
+        if c not in ["In Service", "not present"]:
+            if c in ["Booting", "Shutdown"]:
+                message += "(!)"
+                if status < 1:
+                    status = 1
+            else:
+                message += "(!!)"
+                if status < 2:
+                    status = 2
+
+    return status, message
+
+check_info["selenio_mcp_ctrls"] = {
+    "check_function"        : check_selenio_mcp_ctrls,
+    "inventory_function"    : inventory_selenio_mcp_ctrls,
+    "service_description"   : "%s",
+    "snmp_info"             : (".1.3.6.1.4.1.290.9.3.3.21", ["1.1", "25.1"],
+                                   [ OID_END,  # "1.1.1.1.0" (MCP3) or "25.1.1.1.0" (MCP1)
+                                        1176,  # ctrl1Status (E59enum)
+                                        1190,  # ctrl2Status
+                                         393,  # ctrl1Status (E66enum)
+                                         228,  # ctrl2Status
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.290.9.3.3.21"),
+    "has_perfdata"          : False
+}
