@@ -11,13 +11,15 @@
 def inventory_lynx_rct5023g_power(info):
     inventory = []
     for OID_END, name, label, p1name, p1stat, p1volt, p1temp, p2name, p2stat, p2volt, p2temp in info:
-        inventory.append( (name, None) )
+        sub_oid = OID_END.split(".")[5]
+        inventory.append( (sub_oid + " " + name, None) )
     return inventory
 
 def check_lynx_rct5023g_power(item, _no_params, info):
     status = 0
     for OID_END, name, label, p1name, p1stat, p1volt, p1temp, p2name, p2stat, p2volt, p2temp in info:
-        if item != name:
+        sub_oid = OID_END.split(".")[5]
+        if item != sub_oid + " " + name:
             continue
 
         p1volt = savefloat(p1volt)/10

@@ -11,14 +11,16 @@
 def inventory_lynx_rct5023g_fan(info):
     inventory = []
     for OID_END, name, label, f1name, f2name, f3name, f1stat, f2stat, f3stat in info:
-        inventory.append( (name, None) )
+        sub_oid = OID_END.split(".")[5]
+        inventory.append( (sub_oid + " " + name, None) )
     return inventory
 
 def check_lynx_rct5023g_fan(item, _no_params, info):
     states = [ "ok", "fail", "missing" ]
     status = 0
     for OID_END, name, label, f1name, f2name, f3name, f1stat, f2stat, f3stat in info:
-        if item != name:
+        sub_oid = OID_END.split(".")[5]
+        if item != sub_oid + " " + name:
             continue
 
         f1stat = states[int(f1stat)]
