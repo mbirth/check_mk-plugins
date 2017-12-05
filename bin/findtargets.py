@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@weltn24.de>
 
 import configparser
 import os
