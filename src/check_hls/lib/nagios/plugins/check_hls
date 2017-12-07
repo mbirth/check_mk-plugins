@@ -13,6 +13,7 @@ import datetime
 import pytz
 import html
 import re
+import socket
 import sys
 import urllib.request
 
@@ -85,7 +86,7 @@ class UrlLoader():
     def do_request(self, req):
         try:
             start = datetime.datetime.now()
-            res   = urllib.request.urlopen(req)
+            res   = urllib.request.urlopen(req, timeout=5)
             end   = datetime.datetime.now()
         except urllib.error.HTTPError as err:
             reason = err.reason
@@ -98,6 +99,8 @@ class UrlLoader():
             return err.code, reason, -1
         except urllib.error.URLError as err:
             return -1, err.reason, -1
+        except socket.timeout as err:
+            return -1, "Timeout (5 seconds)", -1
 
         diff = end - start
         diff = round(int(diff.microseconds) / 1000)
@@ -107,7 +110,7 @@ class UrlLoader():
         #req = urllib.request.Request(url=url, method="HEAD")
         req = urllib.request.Request(url=url)   # work around HTTP 405 "Method not allowed"
         status, res, diff = self.do_request(req)
-        return status, res.info(), diff
+        return status, res, diff
 
     def get_content(self, url):
         req = urllib.request.Request(url=url)
