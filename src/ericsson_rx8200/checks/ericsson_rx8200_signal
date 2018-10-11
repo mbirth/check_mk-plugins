@@ -1,0 +1,62 @@
+#!/usr/bin/python
+# -*- coding: utf-8; py-indent-offset: 4 -*-
+#  _______ __   _ ____     __
+# |       |  \ | |___ \   / /
+# |       |   \| | __) | / /-,_
+# |       | |\   |/ __/ /__   _|
+# |_______|_| \__|_____|   |_|
+#
+# @author Markus Birth <markus.birth@welt.de>
+
+def inventory_ericsson_rx8200_signal(info):
+    inventory = []
+    for inpSel, sigSta, sigLvl, pvb, cn, cnm in info:
+        inventory.append( (inpSel, None) )
+    return inventory
+
+def check_ericsson_rx8200_signal(item, params, info):
+    status = 0
+    for inpSel, sigSta, sigLvl, pvb, cn, cnm in info:
+        if inpSel != item:
+            continue
+
+        if sigSta != "LOCKED":
+            status = 2
+
+        msg = "Input {} {} / Level {} / ER {} / C/N {} / Margin {}".format(inpSel, sigSta, sigLvl, pvb, cn, cnm)
+
+        if pvb[0] == "<":
+            pvbFloat = savefloat(pvb[1:])
+        else:
+            pvbFloat = savefloat(pvb)
+
+        cnFloat = savefloat(cn.split(" ")[0])
+        cnmFloat = savefloat(cnm.split(" ")[0])
+
+        perfdata = [
+                ("Signal_Level", saveint(sigLvl), None, None),
+                ("Error_Ratio", pvbFloat, None, None),
+                ("CN", cnFloat, None, None),
+                ("CN_Margin", cnmFloat, None, None)
+        ]
+
+        return (0, msg, perfdata)
+
+    return (3, "%s not found in SNMP data." % item)
+
+check_info["ericsson_rx8200_signal"] = {
+    "check_function"        : check_ericsson_rx8200_signal,
+    "inventory_function"    : inventory_ericsson_rx8200_signal,
+    "service_description"   : "DVB Signal %s",
+    "snmp_info"             : (".1.3.6.1.4.1.1773.1.3.208.2.2", [
+                                     1,  # inputSelect
+                                     2,  # signalStatus
+                                     3,  # signalLevel
+                                     4,  # postViterbiBER
+                                     5,  # C/N
+                                     6,  # C/N Margin
+                              ]),
+    "snmp_scan_function"    : lambda oid: oid(".1.3.6.1.4.1.1773.1.3.208.1.1.1.0"),
+    "has_perfdata"          : True
+}
+

@@ -13,22 +13,16 @@ def perfometer_ericsson_rx8200_fans(row, check_command, perfdata):
         return "", ""
 
     rpm  = float(perfdata[0][1])
-    if perfdata[0][3]:
-        warn = float(perfdata[0][3])
-    else:
-        warn = 7000
-    if perfdata[0][4]:
-        crit = float(perfdata[0][4])
-    else:
-        crit = 8500
+    warn = 1000
+    crit = 300
 
-    if rpm >= crit:
+    if rpm < crit:
         color = "#d23"
-    elif rpm >= warn:
+    elif rpm < warn:
         color = "#dd2"
     else:
         color = "#2d3"
 
-    return "%i rpm" % rpm, perfometer_linear(100*rpm/crit, color)
+    return "%i rpm" % rpm, perfometer_linear(100*rpm/10000, color)
 
 perfometers["check_mk-ericsson_rx8200_fans"] = perfometer_ericsson_rx8200_fans
