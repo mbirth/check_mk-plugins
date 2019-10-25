@@ -363,8 +363,11 @@ class CheckHls():
         segment_urls = []
         total_duration = 0.0
         metadata  = {}
-        for line in iter(res.readline, b""):
-            line = line.decode("utf-8").strip()
+        result = res.read().decode("utf-8")
+        for line in result.split("\n"):
+            line = line.strip()
+            if len(line) == 0:
+                continue
             #print(line)
             if line[0] == "#":
                 header, value = self.parse_metaline(line)
